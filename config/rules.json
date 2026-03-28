@@ -1,0 +1,7 @@
+{
+  "maxDepth": 5,
+  "folderNaming": "{number}_{name}",
+  "numberFormat": "00",
+  "defaultCategory": "99_기타",
+  "fileNaming": "keep_original"
+}
