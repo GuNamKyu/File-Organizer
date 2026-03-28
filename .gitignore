@@ -23,3 +23,10 @@ test_samples/
 *.png
 *.jpg
 *.jpeg
+
+# Logs: 임시 파일 제외, 기록용 .md만 추적
+logs/**/*.ps1
+logs/**/*.txt
+logs/**/*.png
+logs/**/*.jpg
+logs/**/*.jpeg

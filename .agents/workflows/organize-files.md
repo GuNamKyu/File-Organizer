@@ -85,11 +85,35 @@ Get-ChildItem -LiteralPath $base -Recurse | Select-Object FullName, Extension | 
 
 승인된 계획을 바탕으로 PowerShell 스크립트(`organize_run.ps1`)를 생성하고 **한 번에 실행**한다.
 
+**로그 폴더 구조:**
+
+```
+logs/
+└── {YYYYMMDD}_{대상폴더명}/       ← 정리 1건당 폴더 1개
+    ├── {YYYYMMDD}_{대상폴더명}.md  ← 정리 결과 기록
+    ├── scan_result.txt             ← 정리 전 스캔 결과
+    └── organize_run.ps1            ← 실행된 스크립트
+```
+
 **스크립트 구조:**
 
 ```powershell
-$base = "대상경로"
-$logPath = "c:\Users\namkyu-gu\workspace\File-Organizer\logs\{날짜}_{폴더명}.md"
+$base    = "대상경로"
+$runDate = Get-Date -Format 'yyyyMMdd'
+$folderName = Split-Path $base -Leaf
+$logDir  = "c:\Users\namkyu-gu\workspace\File-Organizer\logs\${runDate}_${folderName}"
+$logFile = Join-Path $logDir "${runDate}_${folderName}.md"
+$scriptCopy = Join-Path $logDir "organize_run.ps1"
+
+# 로그 폴더 생성
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+
+# 스캔 결과 저장
+Get-ChildItem -LiteralPath $base -Recurse |
+  Select-Object FullName, Extension |
+  Sort-Object FullName |
+  Out-File -FilePath (Join-Path $logDir "scan_result.txt") -Encoding UTF8
+
 $moved = 0; $errs = @(); $newFolders = @()
 
 # Phase 1: 폴더 생성
@@ -112,19 +136,21 @@ Get-ChildItem -LiteralPath $base -Directory -Recurse |
     }
   }
 
-# 로그 자동 저장
+# 정리 결과 로그 저장
 $logContent = @"
 # 파일 정리 실행 기록
 - 실행일시: $(Get-Date -Format 'yyyy-MM-dd HH:mm')
-- 대상 경로: `$base`
-- 이동된 파일: `$moved 개
-- 오류: `$($errs.Count) 건
-[결과 구조]
+- 대상 경로: $base
+- 이동된 파일: $moved 개
+- 오류: $($errs.Count) 건
 "@
-$logContent | Out-File -FilePath $logPath -Encoding UTF8
+$logContent | Out-File -FilePath $logFile -Encoding UTF8
+
+# 스크립트 자신을 로그 폴더에 복사
+Copy-Item -Path $MyInvocation.MyCommand.Path -Destination $scriptCopy -Force -EA SilentlyContinue
 
 Write-Host "✅ 완료! 이동: $moved 개, 오류: $($errs.Count) 건"
-Write-Host "📋 로그 저장: $logPath"
+Write-Host "📋 로그 폴더: $logDir"
 ```
 
 **실행 원칙:**
